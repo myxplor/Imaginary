@@ -9,30 +9,33 @@ public class TintImageProcessor: ImageProcessor {
     self.tintColor = tintColor
   }
 
-  public func process(image: Image) -> Image {
-    UIGraphicsBeginImageContextWithOptions(image.size, false, image.scale)
-
-    guard let context = UIGraphicsGetCurrentContext() else {
-      return image
+    public func process(image: Image) -> Image {
+        
+        var format = UIGraphicsImageRendererFormat()
+        format.scale = image.scale
+        let renderer = UIGraphicsImageRenderer(size: image.size, format: format)
+        
+        
+        let image = renderer.image { [weak self] context in
+            guard let self else { return }
+            let cgContext = context.cgContext
+            
+            let rect = CGRect(x: 0, y: 0,
+                              width: image.size.width,
+                              height: image.size.height)
+            
+            cgContext.translateBy(x: 0, y: image.size.height)
+            cgContext.scaleBy(x: 1.0, y: -1.0)
+            
+            self.apply(tintColor: tintColor,
+                       onto: image,
+                       context: cgContext, rect: rect)
+            
+        }
+        
+        return image
     }
-
-    let rect = CGRect(x: 0, y: 0,
-                      width: image.size.width,
-                      height: image.size.height)
-
-    context.translateBy(x: 0, y: image.size.height)
-    context.scaleBy(x: 1.0, y: -1.0)
-
-    apply(tintColor: tintColor,
-          onto: image,
-          context: context, rect: rect)
-
-    let processedImage = UIGraphicsGetImageFromCurrentImageContext()
-    UIGraphicsEndImageContext()
-
-    return processedImage ?? image
-  }
-
+    
   private func apply(tintColor: UIColor,
                      onto image: UIImage,
                      context: CGContext,
